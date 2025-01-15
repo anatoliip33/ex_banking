@@ -4,8 +4,8 @@ defmodule ExBanking.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      # Starts a worker by calling: ExBanking.Worker.start_link(arg)
-      # {ExBanking.Worker, arg}
+      {DynamicSupervisor, name: ExBanking.UserSupervisor, strategy: :one_for_one},
+      {Registry, keys: :unique, name: Registry.Users}
     ]
 
     opts = [strategy: :one_for_one, name: ExBanking.Supervisor]
