@@ -22,7 +22,7 @@ defmodule ExBanking do
           | {:error, :wrong_arguments | :user_does_not_exist | :too_many_requests_to_user}
   def get_balance(user, currency) when is_binary(user) and is_binary(currency) do
     with {:ok, user_pid} <- User.find_user_pid(user),
-         response <- GenServer.call(user_pid, {:get_balance, currency}) do
+         {:ok, _} = response <- GenServer.call(user_pid, {:get_balance, currency}) do
 
       GenServer.cast(user_pid, {:decrement_operations_count})
 
@@ -37,7 +37,7 @@ defmodule ExBanking do
           | {:error, :wrong_arguments | :user_does_not_exist | :too_many_requests_to_user}
   def deposit(user, amount, currency) when is_binary(user) and is_number(amount) and amount > 0 and is_binary(currency) do
     with {:ok, user_pid} <- User.find_user_pid(user),
-         response <- GenServer.call(user_pid, {:deposit, amount, currency}) do
+         {:ok, _} = response <- GenServer.call(user_pid, {:deposit, amount, currency}) do
 
       GenServer.cast(user_pid, {:decrement_operations_count})
 
@@ -52,7 +52,7 @@ defmodule ExBanking do
           | {:error, :wrong_arguments | :user_does_not_exist | :not_enough_money | :too_many_requests_to_user}
   def withdraw(user, amount, currency) when is_binary(user) and is_number(amount) and amount > 0 and is_binary(currency) do
     with {:ok, user_pid} <- User.find_user_pid(user),
-      response <- GenServer.call(user_pid, {:withdraw, amount, currency}) do
+         {:ok, _} = response <- GenServer.call(user_pid, {:withdraw, amount, currency}) do
 
       GenServer.cast(user_pid, {:decrement_operations_count})
 
@@ -85,6 +85,9 @@ defmodule ExBanking do
          {:sender_withdraw, {:ok, from_user_balance}} <- {:sender_withdraw, GenServer.call(from_user_pid, {:withdraw, amount, currency})},
          {:receiver_deposit, {:ok, to_user_balance}} <- {:receiver_deposit, GenServer.call(to_user_pid, {:deposit, amount, currency})}
     do
+      GenServer.cast(from_user_pid, {:decrement_operations_count})
+      GenServer.cast(to_user_pid, {:decrement_operations_count})
+
       {:ok, from_user_balance, to_user_balance}
     else
       {:sender, {:error, _message}} ->

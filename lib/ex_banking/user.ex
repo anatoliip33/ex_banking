@@ -30,17 +30,25 @@ defmodule ExBanking.User do
   def handle_call({:deposit, amount, currency}, _from, %{count_operations: count_operations} = state) when count_operations < 10 do
     state = %{state | count_operations: increment_count(count_operations)}
 
-    case state.balance |> Enum.split_with(&(elem(&1, 0) == currency)) do
-      {[{currency, current_amount}], balance} ->
-        new_amount = prepare_amount(current_amount + amount)
+    {new_amount, balance} =
+      case state.balance |> Enum.split_with(&(elem(&1, 0) == currency)) do
+        {[{_currency, current_amount}], balance} ->
+          {
+            prepare_amount(current_amount + amount),
+            balance
+          }
 
-        {:reply, {:ok, new_amount}, state |> Map.put(:balance, [{currency, new_amount} | balance])}
+        {[], balance} ->
+          {
+            prepare_amount(amount),
+            balance
+          }
+      end
 
-      {[], balance} ->
-        amount = prepare_amount(amount)
+      new_balance = [{currency, new_amount} | balance]
 
-        {:reply, {:ok, amount}, state |> Map.put(:balance, [{currency, amount} | balance])}
-    end
+      # {:reply, {:ok, new_amount}, state |> Map.put(:balance, new_balance), {:continue, :decrement_operations_count}}
+      {:reply, {:ok, new_amount}, state |> Map.put(:balance, new_balance)}
   end
 
   @impl true
@@ -68,7 +76,8 @@ defmodule ExBanking.User do
 
   @impl true
   def handle_cast({:decrement_operations_count}, %{count_operations: count_operations} = state) do
-    {:noreply, %{state | count_operations: count_operations - 1}}
+    new_state = %{state | count_operations: count_operations - 1}
+    {:noreply, new_state}
   end
 
   def find_user_pid(user) do

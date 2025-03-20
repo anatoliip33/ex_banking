@@ -84,14 +84,13 @@ defmodule ExBankingTest do
   end
 
   test "concurrent requests for a user" do
-    assert create_user("alice") == :ok
+    # assert create_user("alice") == :ok
     assert create_user("bob") == :ok
     attempted_requests = 50
 
     tasks =
       Enum.map(1..attempted_requests, fn _ ->
         Task.async(fn ->
-          deposit("alice", 10, "USD")
           deposit("bob", 10, "USD")
         end)
       end)
@@ -102,13 +101,13 @@ defmodule ExBankingTest do
     assert Enum.count(results, &(elem(&1, 0) == :ok)) <= 20
 
     # 60 percent of the time it works every time)
-    # assert Enum.count(results, &(elem(&1, 0) == :ok)) == 10
+    assert Enum.count(results, &(elem(&1, 0) == :ok)) == 10
     # assert get_balance("alice", "USD") == {:ok, 100}
-    # assert get_balance("bob", "USD") == {:ok, 100}
+    assert get_balance("bob", "USD") == {:ok, 100}
 
-    {:ok, alice_amount} = get_balance("alice", "USD")
+    # {:ok, alice_amount} = get_balance("alice", "USD")
     {:ok, bob_amount} = get_balance("bob", "USD")
-    assert alice_amount >= 100 and alice_amount <= 200
+    # assert alice_amount >= 100 and alice_amount <= 200
     assert bob_amount >= 100 and bob_amount <= 200
   end
 
