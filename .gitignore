@@ -26,3 +26,5 @@ ex_banking-*.tar
 /tmp/
 
 mix.lock
+
+.elixir_ls
